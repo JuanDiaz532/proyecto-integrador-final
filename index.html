@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Cursos - Proyecto Integrador Final</title>
+  <style>
+    :root {
+      --primary: #1a365d;
+      --primary-hover: #2b6cb0;
+      --bg: #f7fafc;
+      --card-bg: #ffffff;
+      --text: #2d3748;
+      --error: #c53030;
+      --success: #276749;
+      --focus-ring: #3182ce;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); line-height: 1.5; padding: 1rem; }
+    
+    header { max-width: 900px; margin: 0 auto 2rem; text-align: center; }
+    h1 { 
+  color: var(--primary); 
+  font-size: 1.4rem; 
+  margin-bottom: 0.5rem; 
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}    
+    main { max-width: 900px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 2rem; }
+    
+    /* Media Query para escritorio y tabletas */
+    @media (min-width: 768px) {
+      main { grid-template-columns: 1fr 1.5fr; }
+    }
+
+    .card { background: var(--card-bg); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    
+    /* Estilos del Formulario Accesible */
+    form { display: flex; flex-direction: column; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+    label { font-weight: 600; font-size: 0.9rem; }
+    input, textarea, button { font-size: 1rem; padding: 0.6rem; border: 1px solid #cbd5e0; border-radius: 4px; }
+    
+    /* Foco visible indispensable para accesibilidad por teclado */
+    input:focus, textarea:focus, button:focus { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+    
+    button { background-color: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+    button:hover { background-color: var(--primary-hover); }
+
+    /* Contenedor de estados */
+    #status-message { margin-top: 1rem; padding: 0.75rem; border-radius: 4px; display: none; font-weight: bold; }
+    .status-loading { background: #ebf8ff; color: #2b6cb0; }
+    .status-error { background: #fff5f5; color: var(--error); }
+    .status-success { background: #f0fff4; color: var(--success); }
+
+    /* Lista de cursos */
+    .course-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+    .course-item { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 6px; border-left: 4px solid var(--primary); }
+    .course-item h3 { color: var(--primary); }
+    .empty-state { text-align: center; color: #718096; padding: 2rem 0; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Gestión de Cursos (Portal Accesible)</h1>
+    <p>Proyecto Integrador Final — Semana 4</p>
+  </header>
+
+  <main>
+    <!-- Sección del Formulario -->
+    <section class="card" aria-labelledby="form-title">
+      <h2 id="form-title">Registrar Nuevo Curso</h2>
+      <form id="courseForm" novalidate>
+        <div class="form-group">
+          <label for="nombre">Nombre del Curso *</label>
+          <input type="text" id="nombre" name="nombre" required aria-required="true" aria-describedby="nombre-help">
+          <small id="nombre-help" style="color:#718096;">Mínimo 3 caracteres.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="descripcion">Descripción</label>
+          <textarea id="descripcion" name="descripcion" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="cupo">Cupo Máximo *</label>
+          <input type="number" id="cupo" name="cupo_maximo" min="1" required aria-required="true">
+        </div>
+
+        <button type="submit" id="btnSubmit">Guardar Curso</button>
+      </form>
+
+      <!-- Área de estado para lectores de pantalla y usuarios -->
+      <div id="status-message" role="alert" aria-live="polite"></div>
+    </section>
+
+    <!-- Sección de Lista de Cursos -->
+    <section class="card" aria-labelledby="list-title">
+      <h2 id="list-title">Catálogo de Cursos</h2>
+      <div id="coursesContainer" class="course-grid">
+        <div class="empty-state">Cargando cursos...</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const API_URL = 'http://localhost:3000/api/cursos';
+    const coursesContainer = document.getElementById('coursesContainer');
+    const courseForm = document.getElementById('courseForm');
+    const statusMsg = document.getElementById('status-message');
+
+    // Función para mostrar mensajes de estado
+    function showStatus(text, type) {
+      statusMsg.style.display = 'block';
+      statusMsg.className = `status-${type}`;
+      statusMsg.textContent = text;
+      if(type === 'success') {
+        setTimeout(() => { statusMsg.style.display = 'none'; }, 4000);
+      }
+    }
+
+    // Cargar cursos desde la API (GET)
+    async function loadCourses() {
+      try {
+        const res = await fetch(API_URL);
+        if(!res.ok) throw new Error('Error al obtener los datos');
+        const data = await res.json();
+
+        if (data.data.length === 0) {
+          coursesContainer.innerHTML = '<div class="empty-state">No hay cursos registrados.</div>';
+          return;
+        }
+
+        coursesContainer.innerHTML = data.data.map(curso => `
+          <article class="course-item" tabindex="0">
+            <h3>${curso.nombre}</h3>
+            <p>${curso.descripcion || 'Sin descripción'}</p>
+            <p><strong>Cupo:</strong> ${curso.cupo_maximo} personas</p>
+          </article>
+        `).join('');
+
+      } catch (err) {
+        coursesContainer.innerHTML = '<div class="empty-state" style="color:var(--error);">No se pudo conectar con el servidor.</div>';
+      }
+    }
+
+    // Guardar nuevo curso (POST)
+    courseForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const nombre = document.getElementById('nombre').value.trim();
+      const descripcion = document.getElementById('descripcion').value.trim();
+      const cupo_maximo = parseInt(document.getElementById('cupo').value);
+
+      // Validación en cliente
+      if (!nombre || nombre.length < 3) {
+        showStatus('El nombre debe tener al menos 3 caracteres.', 'error');
+        return;
+      }
+      if (isNaN(cupo_maximo) || cupo_maximo <= 0) {
+        showStatus('El cupo debe ser un número mayor a 0.', 'error');
+        return;
+      }
+
+      showStatus('Guardando curso...', 'loading');
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre, descripcion, cupo_maximo })
+        });
+
+        const result = await res.json();
+
+        if (!res.ok) {
+          throw new Error(result.error || 'Error al guardar el curso');
+        }
+
+        showStatus('¡Curso guardado exitosamente!', 'success');
+        courseForm.reset();
+        loadCourses();
+
+      } catch (err) {
+        showStatus(err.message, 'error');
+      }
+    });
+
+    // Carga inicial
+    loadCourses();
+  </script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+{
+	"info": {
+		"name": "Semana3_APIs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GET Cursos",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/api/cursos",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "cursos"]
+				}
+			}
+		},
+		{
+			"name": "POST Crear Curso",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nombre\": \"Desarrollo Seguro y OWASP\",\n  \"descripcion\": \"Prácticas de seguridad web\",\n  \"cupo_maximo\": 25\n}"
+				},
+				"url": {
+					"raw": "http://localhost:3000/api/cursos",
+					"protocol": "http",
+					"host": ["localhost"],
+					"port": "3000",
+					"path": ["api", "cursos"]
+				}
+			}
+		}
+	]
+}
